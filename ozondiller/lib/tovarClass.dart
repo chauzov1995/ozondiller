@@ -21,6 +21,8 @@ class TovarClass {
     this.priceuan,
     this.veskorob,
     this.kolvovkorob,
+    this.konkurentssilka,
+    this.konkurentprice,
   });
 
   int? id;
@@ -33,6 +35,8 @@ class TovarClass {
   double? veskorob;
   int? kolvovkorob;
   int? skolkorob;
+  String? konkurentssilka;
+  double? konkurentprice;
 
   factory TovarClass.fromJson(Map<String, dynamic> json) => TovarClass(
     id: json["id"],
@@ -44,6 +48,8 @@ class TovarClass {
     priceuan: json["priceuan"],
     veskorob: json["veskorob"],
     kolvovkorob: json["kolvovkorob"],
+    konkurentssilka: json["konkurentssilka"],
+    konkurentprice: json["konkurentprice"],
   );
 
   factory TovarClass.fromMysql(ResultRow json) => TovarClass(
@@ -56,6 +62,8 @@ class TovarClass {
     priceuan: json["priceuan"],
     veskorob: json["veskorob"],
     kolvovkorob: json["kolvovkorob"],
+    konkurentssilka: json["konkurentssilka"],
+    konkurentprice: json["konkurentprice"],
   );
 
   Map<String, dynamic> toJson() => {
@@ -68,5 +76,7 @@ class TovarClass {
     "priceuan": priceuan,
     "veskorob": veskorob,
     "kolvovkorob": kolvovkorob,
+    "konkurentssilka": konkurentssilka,
+    "konkurentprice": konkurentprice,
   };
 }

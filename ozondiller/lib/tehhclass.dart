@@ -1,4 +1,4 @@
-import 'dart:ffi';
+
 
 import 'package:mysql1/mysql1.dart';
 
@@ -19,7 +19,7 @@ class tehhclass {
     conn = await MySqlConnection.connect(settings);
   }
   static String tostringmoney(double price){
-    return (double.r(price*100)/100).toString();
+    return ((price*100).round()/100).toString();
   }
 
 }

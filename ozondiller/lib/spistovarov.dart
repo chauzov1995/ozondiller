@@ -47,6 +47,47 @@ class _spistovarovState extends State<spistovarov> {
     super.dispose();
   }
 
+  DataRow widgerere(index) {
+    return DataRow(cells: [
+      DataCell(Image.network(
+        spistovar[index].image ?? "",
+        height: 120,
+        fit: BoxFit.fitWidth,
+        width: 120,
+      )),
+      DataCell(Text(spistovar[index].name ?? "")),
+      DataCell(Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextButton(
+            onPressed: () {
+              launchUrl(Uri.parse(spistovar[index].ssilka ?? ""));
+            },
+            child: Text("ссылка 1688"),
+          ),
+          TextButton(
+            onPressed: () {
+              launchUrl(Uri.parse(spistovar[index].konkurentssilka ?? ""));
+            },
+            child: Text("ссылка на конкурента"),
+          )
+        ],
+      )),
+      DataCell(Text(spistovar[index].komment ?? "")),
+      DataCell(Text(spistovar[index].prioritet.toString())),
+      DataCell(Text(spistovar[index].priceuan.toString())),
+      DataCell(Text(tehhclass.tostringmoney(spistovar[index].veskorob!))),
+      DataCell(Text(spistovar[index].kolvovkorob.toString())),
+      DataCell(Text((spistovar[index].priceuan! * spistovar[index].kolvovkorob!)
+          .toString())),
+      DataCell(Text((spistovar[index].skolkorob ?? "0").toString())),
+      DataCell(Text(tehhclass.tostringmoney((spistovar[index].priceuan! *
+          spistovar[index].kolvovkorob! *
+          tehhclass.kursuuanb)))),
+      DataCell(Text(spistovar[index].konkurentprice.toString())),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,7 +97,7 @@ class _spistovarovState extends State<spistovarov> {
         title: Text("Список товаров", style: TextStyle(color: Colors.black)),
       ),
       body: DataTable2(
-        dataRowHeight: 120,
+          dataRowHeight: 120,
           columnSpacing: 12,
           horizontalMargin: 12,
           minWidth: 600,
@@ -102,39 +143,13 @@ class _spistovarovState extends State<spistovarov> {
               label: Text('Итого руб'),
               numeric: true,
             ),
-
-          ], rows: List<DataRow>.generate(
-            spistovar.length,
-                (index) =>
-
-                    DataRow(cells: [
-                    DataCell(      Image.network(
-                spistovar[index].image ?? "",
-                height: 120,
-                fit: BoxFit.fitWidth,
-                width: 120,
-    )),
-            DataCell(     Text(spistovar[index].name ?? "")),
-    DataCell(       TextButton(
-                onPressed: () {
-                  launchUrl(Uri.parse(spistovar[index].ssilka ?? ""));
-                },
-                child: Text("ссылка 1688"),
-              )),
-              DataCell(    Text(spistovar[index].komment ?? "")),
-    DataCell(    Text(spistovar[index].prioritet.toString() )),
-    DataCell(    Text(spistovar[index].priceuan.toString() )),
-    DataCell(    Text(spistovar[index].veskorob.toString() )),
-    DataCell(     Text(spistovar[index].kolvovkorob.toString() )),
-    DataCell(     Text((spistovar[index].priceuan! * spistovar[index].kolvovkorob!).toString() )),
-    DataCell(     Text((spistovar[index].skolkorob??"0").toString())),
-    DataCell(     Text((spistovar[index].priceuan! * spistovar[index].kolvovkorob!*tehhclass.kursuuanb).toString() )),
-            ])
-
-
-        ),
-        ),
-
+            DataColumn(
+              label: Text('Цена конкурента'),
+              numeric: true,
+            ),
+          ],
+          rows: List<DataRow>.generate(
+              spistovar.length, (index) => widgerere(index))),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await Navigator.push(
