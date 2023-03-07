@@ -7,6 +7,7 @@ import 'package:mysql1/mysql1.dart';
 class tehhclass {
   static MySqlConnection? conn;
   static double kursuuanb=9.7;
+  static double kursdollar=75;
 
   static initbd() async {
     conn?.close();
@@ -21,5 +22,15 @@ class tehhclass {
   static String tostringmoney(double price){
     return ((price*100).round()/100).toString();
   }
+
+  static updatetovar(String param, String value, int whereid) async {
+    await  initbd();
+    await conn!.query(
+        'update tovars set '+param+'=? where id=?',
+        [value, whereid]);
+
+
+  }
+
 
 }

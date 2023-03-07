@@ -109,7 +109,7 @@ class _addnewtovarState extends State<addnewtovar> {
                     if(true) {
                       await  tehhclass.initbd();
                       var result = await tehhclass.conn!.query(
-                          'INSERT INTO `tovars`( `name`, `ssilka`, `image`, `komment`, `priceuan`, `veskorob`, `kolvovkorob`, `konkurentssilka`, `konkurentprice`) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                          'INSERT INTO `tovars`( `name`, `ssilka`, `image`, `komment`, `priceuan`, `veskorob`, `kolvovkorob`, `konkurentssilka`, `konkurentprice`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
                           [
                             controllername.text,
                             controllerssilk.text,
@@ -121,6 +121,7 @@ class _addnewtovarState extends State<addnewtovar> {
                             controllerkonkssilka.text,
                             controllerkonkurprice.text,
                           ]);
+
                       Navigator.pop(context);
                     }else {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
