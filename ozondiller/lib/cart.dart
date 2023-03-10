@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:ozondiller/konkurentred.dart';
 import 'package:ozondiller/tehhclass.dart';
 import 'package:ozondiller/tovarClass.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Define a custom Form widget.
 class cart extends StatefulWidget {
@@ -179,7 +180,7 @@ class _cartState extends State<cart> {
                                                     print("asdasd");
 
 
-
+                                                    launchUrl(Uri.parse(widget.tovar.konkurents![index].konkurentssilka ?? ""));
 
 
                                                   },

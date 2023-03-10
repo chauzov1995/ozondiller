@@ -112,6 +112,14 @@ class _spistovarovState extends State<spistovarov> {
     double drugierash = 20;
 
     double profit = konkupricekorrect - fbs - reklama - sebestoim - drugierash;
+    double profitproc =profit.isInfinite || profit.isNaN ? 0 : profit / konkupricekorrect * 100;
+
+  Color  color= Colors.green;
+    if(profitproc<10){
+      color=Colors.red;
+    }else if(profitproc>=10 && profitproc<20){
+      color=Colors.yellow.shade700;
+    }
 
     return DataRow(cells: [
       DataCell(Image.network(
@@ -143,7 +151,7 @@ class _spistovarovState extends State<spistovarov> {
           ),
           TextButton(
             onPressed: () {
-              launchUrl(Uri.parse(spistovar[index].konkurentssilka ?? ""));
+              //launchUrl(Uri.parse(spistovar[index].konkurentssilka ?? ""));
             },
             child:
                 Text("Конкурент (${spistovar[index].konkurents!.length - 1})"),
@@ -219,10 +227,10 @@ class _spistovarovState extends State<spistovarov> {
           print("Введенный текст: $text");
         },
       )),
-      DataCell(Text(
-        (priceuan * tehhclass.kursuuanb).toString() +
+      DataCell(Text(tehhclass.tostringmoney(priceuan * tehhclass.kursuuanb)
+         +
             "\n" +
-            (priceuan * tehhclass.kursuuanb * kolvovkorob).toString(),
+    tehhclass.tostringmoney(priceuan * tehhclass.kursuuanb * kolvovkorob),
         textAlign: TextAlign.right,
       )),
       DataCell(TextFormField(
@@ -249,7 +257,8 @@ class _spistovarovState extends State<spistovarov> {
       DataCell(
           Text(tehhclass.tostringmoney(sebestoim.isInfinite ? 0 : sebestoim))),
       DataCell(Text(
-          "${tehhclass.tostringmoney(profit.isInfinite ? 0 : profit)}\n${tehhclass.tostringmoney(profit.isInfinite || profit.isNaN ? 0 : profit / konkupricekorrect * 100)}%")),
+          "${tehhclass.tostringmoney(profit.isInfinite ? 0 : profit)}\n${tehhclass.tostringmoney(profitproc)}%",
+      style: TextStyle(color: color, fontWeight: FontWeight.bold),)),
     ]);
   }
 

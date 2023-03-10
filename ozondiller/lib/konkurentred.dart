@@ -105,7 +105,7 @@ class _konkurentredState extends State<konkurentred> {
                             if (true) {
                               await tehhclass.initbd();
                               var result = await tehhclass.conn!.query(
-                                  'INSERT INTO konkurent ( konkurentid, tovarid, konkurentssilka, konkurentoborot, konkurentcountprod) VALUES(?,?,?,?,?,?) ON DUPLICATE KEY UPDATE konkurentssilka=?, konkurentoborot=?, konkurentcountprod=?, tovarid=?',
+                                  'INSERT INTO konkurent ( konkurentid, tovarid, konkurentssilka, konkurentoborot, konkurentcountprod) VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE konkurentssilka=?, konkurentoborot=?, konkurentcountprod=?, tovarid=?',
                                   [
                                     idlonkurenta,
                                     widget.tovar.id,
