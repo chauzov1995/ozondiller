@@ -1,5 +1,6 @@
 
 
+import 'package:intl/intl.dart';
 import 'package:mysql1/mysql1.dart';
 
 
@@ -20,7 +21,8 @@ class tehhclass {
     conn = await MySqlConnection.connect(settings);
   }
   static String tostringmoney(double price){
-    return ((price*100).round()/100).toString();
+    final oCcy = new NumberFormat("#,##0.00");
+    return oCcy.format(price);
   }
 
   static updatetovar(String param, String value, int whereid) async {

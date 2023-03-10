@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:mysql1/mysql1.dart';
+import 'package:ozondiller/konkurentClass.dart';
 
 TovarClass tovarClassFromJson(String str) => TovarClass.fromJson(json.decode(str));
 
@@ -42,6 +43,7 @@ class TovarClass {
   double? konkurentprice;
   double? konkurentoborot;
   int? konkurentcountprod;
+  List<KonkurentClass>? konkurents;
 
   factory TovarClass.fromJson(Map<String, dynamic> json) => TovarClass(
     id: json["id"],

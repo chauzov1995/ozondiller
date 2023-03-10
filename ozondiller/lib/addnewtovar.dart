@@ -30,8 +30,7 @@ class _addnewtovarState extends State<addnewtovar> {
   TextEditingController controllerkomment = TextEditingController();
   TextEditingController controllerves = TextEditingController();
   TextEditingController controllerkolvo = TextEditingController();
-  TextEditingController controllerkonkssilka = TextEditingController();
-  TextEditingController controllerkonkurprice = TextEditingController();
+
 
   @override
   Widget build(BuildContext context) {
@@ -88,18 +87,7 @@ class _addnewtovarState extends State<addnewtovar> {
                 ),
                 controller: controllerkolvo,
               ),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Ссылка на конкурента',
-                ),
-                controller: controllerkonkssilka,
-              ),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Цена конкурента',
-                ),
-                controller: controllerkonkurprice,
-              ),
+
               Container(
                 alignment: Alignment.centerLeft,
                 // width: double.infinity,
@@ -109,7 +97,7 @@ class _addnewtovarState extends State<addnewtovar> {
                     if(true) {
                       await  tehhclass.initbd();
                       var result = await tehhclass.conn!.query(
-                          'INSERT INTO `tovars`( `name`, `ssilka`, `image`, `komment`, `priceuan`, `veskorob`, `kolvovkorob`, `konkurentssilka`, `konkurentprice`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                          'INSERT INTO `tovars`( `name`, `ssilka`, `image`, `komment`, `priceuan`, `veskorob`, `kolvovkorob`) VALUES (?, ?, ?, ?, ?, ?, ?)',
                           [
                             controllername.text,
                             controllerssilk.text,
@@ -118,8 +106,7 @@ class _addnewtovarState extends State<addnewtovar> {
                             controllerprice.text,
                             controllerves.text,
                             controllerkolvo.text,
-                            controllerkonkssilka.text,
-                            controllerkonkurprice.text,
+
                           ]);
 
                       Navigator.pop(context);

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mysql1/mysql1.dart';
 import 'package:ozondiller/addnewtovar.dart';
+import 'package:ozondiller/cart.dart';
+import 'package:ozondiller/konkurentClass.dart';
 import 'package:ozondiller/tovarClass.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:ozondiller/tehhclass.dart';
@@ -29,25 +31,44 @@ class _spistovarovState extends State<spistovarov> {
   }
 
   List<TovarClass> spistovar = <TovarClass>[];
+  List<KonkurentClass> spiskonkurent = <KonkurentClass>[];
   double vsegozakupitb = 0;
   double vsegoves = 0;
 
   firstinti() async {
     vsegozakupitb = 0;
     vsegoves = 0;
-    spistovar.clear();
 
-    var userId = 1;
     await tehhclass.initbd();
+
+    spiskonkurent.clear();
+    var results2 = await tehhclass.conn!.query('SELECT * FROM `konkurent`', []);
+    results2.forEach((json) {
+      KonkurentClass ss = KonkurentClass.fromMysql(json);
+      spiskonkurent.add(KonkurentClass.fromMysql(json));
+    });
+
+    spistovar.clear();
     var results = await tehhclass.conn!
-        .query('SELECT * FROM `tovars` WHERE ? order by prioritet', [userId]);
+        .query('SELECT * FROM `tovars` order by prioritet', []);
     results.forEach((json) {
       TovarClass ss = TovarClass.fromMysql(json);
-      spistovar.add(TovarClass.fromMysql(json));
+      ss.konkurents =
+          spiskonkurent.where((element) => element.tovarid == ss.id).toList();
+      ss.konkurents!.add(KonkurentClass(
+          id: 0,
+          konkurentcountprod: 0,
+          konkurentprice: 0,
+          konkurentid: 0,
+          konkurentoborot: 0,
+          konkurentssilka: ""));
+
+      spistovar.add(ss);
       vsegozakupitb +=
           ss.priceuan! * tehhclass.kursuuanb * ss.kolvovkorob! * ss.skolkorob!;
       vsegoves += ss.veskorob! * ss.skolkorob!;
     });
+
     setState(() {});
   }
 
@@ -61,18 +82,36 @@ class _spistovarovState extends State<spistovarov> {
     double veskorob = spistovar[index].veskorob ?? 0;
     int skolkorob = spistovar[index].skolkorob ?? 0;
     int kolvovkorob = spistovar[index].kolvovkorob ?? 0;
-    double konkurentprice = spistovar[index].konkurentprice ?? 0;
-    double konkurentoborot = spistovar[index].konkurentoborot ?? 0;
-    int konkurentcountprod = spistovar[index].konkurentcountprod ?? 0;
 
-    double dostavka=2;//в юанях китай около 2 юаней за кг
-    double oreshotka=15;//в долларах
-    double dostavkapricezakg=4.2;//в долларах
-    double dostavkasdek=60;//в рубллях за кг
+    // double konkurentprice=0;
+    double konkurentoborot = 0;
+    int konkurentcountprod = 0;
+    spistovar[index].konkurents!.forEach((element) {
+      //konkurentprice+=  element.konkurentprice!;
+      konkurentoborot += element.konkurentoborot!;
+      konkurentcountprod += element.konkurentcountprod!;
+    });
 
-    double sebestoim=((priceuan*kolvovkorob + dostavka*veskorob)*tehhclass.kursuuanb+( oreshotka+dostavkapricezakg* veskorob)*tehhclass.kursdollar+dostavkasdek)/kolvovkorob;
+    double dostavka = 2; //в юанях китай около 2 юаней за кг
+    double oreshotka = 15; //в долларах
+    double dostavkapricezakg = 4.2; //в долларах
+    double dostavkasdek = 60; //в рубллях за кг
 
+    double sebestoim = ((priceuan * kolvovkorob + dostavka * veskorob) *
+                tehhclass.kursuuanb +
+            (oreshotka + dostavkapricezakg * veskorob) * tehhclass.kursdollar +
+            dostavkasdek) /
+        kolvovkorob;
 
+    double konkupricekorrect = 0;
+    if (konkurentcountprod != 0) {
+      konkupricekorrect = konkurentoborot / konkurentcountprod;
+    }
+    double reklama = konkupricekorrect * 0.1;
+    double fbs = konkupricekorrect * 0.2;
+    double drugierash = 20;
+
+    double profit = konkupricekorrect - fbs - reklama - sebestoim - drugierash;
 
     return DataRow(cells: [
       DataCell(Image.network(
@@ -81,7 +120,18 @@ class _spistovarovState extends State<spistovarov> {
         fit: BoxFit.fitWidth,
         width: 120,
       )),
-      DataCell(Text(spistovar[index].name ?? "")),
+      DataCell(
+        TextButton(
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => cart(spistovar[index])),
+            );
+            firstinti();
+          },
+          child: Text(spistovar[index].name ?? ""),
+        ),
+      ),
       DataCell(Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -89,13 +139,14 @@ class _spistovarovState extends State<spistovarov> {
             onPressed: () {
               launchUrl(Uri.parse(spistovar[index].ssilka ?? ""));
             },
-            child: Text("Купить"),
+            child: Text("1688"),
           ),
           TextButton(
             onPressed: () {
               launchUrl(Uri.parse(spistovar[index].konkurentssilka ?? ""));
             },
-            child: Text("Конкурент"),
+            child:
+                Text("Конкурент (${spistovar[index].konkurents!.length - 1})"),
           ),
           TextButton(
             onPressed: () {
@@ -191,58 +242,14 @@ class _spistovarovState extends State<spistovarov> {
       )),
       DataCell(Text(tehhclass.tostringmoney(
           priceuan * kolvovkorob * tehhclass.kursuuanb * skolkorob))),
-      konkurentcountprod == 0 || konkurentoborot == 0
-          ? DataCell(TextFormField(
-              textAlign: TextAlign.end,
-              inputFormatters: <TextInputFormatter>[
-                //  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-                FilteringTextInputFormatter.allow(
-                    RegExp(r'[0-9]+[,.]{0,1}[0-9]*')),
-              ],
-              initialValue: konkurentprice.toString(),
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-              ),
-              onFieldSubmitted: (text) {
-                tehhclass.updatetovar(
-                    "konkurentprice", text, spistovar[index].id!);
-                print("Введенный текст: $text");
-              },
-            ))
-          : DataCell(Text(
-              tehhclass.tostringmoney(konkurentoborot / konkurentcountprod))),
-      DataCell(TextFormField(
-        textAlign: TextAlign.end,
-        inputFormatters: <TextInputFormatter>[
-          //  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9]+[,.]{0,1}[0-9]*')),
-        ],
-        initialValue: konkurentoborot.toString(),
-        decoration: InputDecoration(
-          border: OutlineInputBorder(),
-        ),
-        onFieldSubmitted: (text) {
-          tehhclass.updatetovar("konkurentoborot", text, spistovar[index].id!);
-          print("Введенный текст: $text");
-        },
-      )),
-      DataCell(TextFormField(
-        textAlign: TextAlign.end,
-        inputFormatters: <TextInputFormatter>[
-          //  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9]+[,.]{0,1}[0-9]*')),
-        ],
-        initialValue: konkurentcountprod.toString(),
-        decoration: InputDecoration(
-          border: OutlineInputBorder(),
-        ),
-        onFieldSubmitted: (text) {
-          tehhclass.updatetovar(
-              "konkurentcountprod", text, spistovar[index].id!);
-          print("Введенный текст: $text");
-        },
-      )),
-    DataCell(Text(tehhclass.tostringmoney(sebestoim.isInfinite?0:sebestoim))),
+      DataCell(Text(tehhclass.tostringmoney(konkupricekorrect))),
+      DataCell(Text(tehhclass.tostringmoney(konkurentoborot))),
+      DataCell(Text(konkurentcountprod.toString())),
+
+      DataCell(
+          Text(tehhclass.tostringmoney(sebestoim.isInfinite ? 0 : sebestoim))),
+      DataCell(Text(
+          "${tehhclass.tostringmoney(profit.isInfinite ? 0 : profit)}\n${tehhclass.tostringmoney(profit.isInfinite || profit.isNaN ? 0 : profit / konkupricekorrect * 100)}%")),
     ]);
   }
 
@@ -270,7 +277,7 @@ class _spistovarovState extends State<spistovarov> {
                     label: Text('Название'),
                   ),
                   DataColumn(
-                    label: Text('Ссылка 1688'),
+                    label: Text('Ссылки'),
                   ),
                   DataColumn(
                     label: Text('Коментарий'),
@@ -319,6 +326,10 @@ class _spistovarovState extends State<spistovarov> {
                     label: Text('Себестоимость'),
                     numeric: true,
                   ),
+                  DataColumn(
+                    label: Text('Профит'),
+                    numeric: true,
+                  ),
                 ],
                 rows: List<DataRow>.generate(
                     spistovar.length, (index) => widgerere(index)))),
@@ -334,15 +345,25 @@ class _spistovarovState extends State<spistovarov> {
                   children: [
                     Text(
                         'Стоимость закупки в китае ${tehhclass.tostringmoney(vsegozakupitb)} р.'),
-                    Text(
-                        'Доставка 5% ${tehhclass.tostringmoney(vsegozakupitb * 0.05)} р.'),
                     Text('Вес общий ${tehhclass.tostringmoney(vsegoves)} кг.'),
                     Text(
                         'Доставка 4.2 доллара за кг ${tehhclass.tostringmoney(vsegoves * tehhclass.kursdollar * 4.2)} р.'),
                     Text(
-                        'Итого с доставкой 5% ${tehhclass.tostringmoney(vsegozakupitb * 0.05 + vsegozakupitb)} р.'),
-                    Text(
                         'Итого с доставкой 4.2 доллара за кг ${tehhclass.tostringmoney(vsegoves * tehhclass.kursdollar * 4.2 + vsegozakupitb)} р.'),
+                  ],
+                ),
+                SizedBox(
+                  width: 20,
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        'Стоимость закупки в китае ${tehhclass.tostringmoney(vsegozakupitb)} р.'),
+                    Text(
+                        'Доставка 5% ${tehhclass.tostringmoney(vsegozakupitb * 0.05)} р.'),
+                    Text(
+                        'Итого с доставкой 5% ${tehhclass.tostringmoney(vsegozakupitb * 0.05 + vsegozakupitb)} р.'),
                   ],
                 )
               ],
