@@ -30,6 +30,8 @@ class _addnewtovarState extends State<addnewtovar> {
   TextEditingController controllerkomment = TextEditingController();
   TextEditingController controllerves = TextEditingController();
   TextEditingController controllerkolvo = TextEditingController();
+  TextEditingController controllerfbs = TextEditingController(text: '0.2');
+  TextEditingController controllerdrugireash = TextEditingController(text: '20');
 
 
   @override
@@ -87,6 +89,19 @@ class _addnewtovarState extends State<addnewtovar> {
                 ),
                 controller: controllerkolvo,
               ),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Расходы FBS',
+                ),
+
+                controller: controllerfbs,
+              ),      TextField(
+                decoration: InputDecoration(
+                  labelText: 'Другие расходы (упаковка)',
+                ),
+                controller: controllerdrugireash,
+              ),
+
 
               Container(
                 alignment: Alignment.centerLeft,
@@ -97,7 +112,7 @@ class _addnewtovarState extends State<addnewtovar> {
                     if(true) {
                       await  tehhclass.initbd();
                       var result = await tehhclass.conn!.query(
-                          'INSERT INTO `tovars`( `name`, `ssilka`, `image`, `komment`, `priceuan`, `veskorob`, `kolvovkorob`) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                          'INSERT INTO `tovars`( `name`, `ssilka`, `image`, `komment`, `priceuan`, `veskorob`, `kolvovkorob`, fbs, drugierash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
                           [
                             controllername.text,
                             controllerssilk.text,
@@ -106,6 +121,8 @@ class _addnewtovarState extends State<addnewtovar> {
                             controllerprice.text,
                             controllerves.text,
                             controllerkolvo.text,
+                            controllerfbs.text,
+                            controllerdrugireash.text,
 
                           ]);
 

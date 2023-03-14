@@ -2,13 +2,15 @@
 
 import 'package:intl/intl.dart';
 import 'package:mysql1/mysql1.dart';
+import 'package:ozondiller/settingsClass.dart';
 
 
 
 class tehhclass {
   static MySqlConnection? conn;
-  static double kursuuanb=9.7;
-  static double kursdollar=75;
+  //static double kursuuanb=11.5;//9.7;
+ // static double kursdollar=80;//75;
+  static SettingsClass? settings;
 
   static initbd() async {
     conn?.close();

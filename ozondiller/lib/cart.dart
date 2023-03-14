@@ -25,6 +25,8 @@ class _cartState extends State<cart> {
   TextEditingController controllerkomment = TextEditingController();
   TextEditingController controllerves = TextEditingController();
   TextEditingController controllerkolvo = TextEditingController();
+  TextEditingController controllerfbs = TextEditingController();
+  TextEditingController controllerdrugierash = TextEditingController();
 
   @override
   void initState() {
@@ -37,6 +39,8 @@ class _cartState extends State<cart> {
     controllerkomment.text = widget.tovar.komment!;
     controllerves.text = widget.tovar.veskorob.toString();
     controllerkolvo.text = widget.tovar.kolvovkorob.toString();
+    controllerfbs.text = widget.tovar.fbs.toString();
+    controllerdrugierash.text = widget.tovar.drugierash.toString();
   }
 
   @override
@@ -121,6 +125,20 @@ class _cartState extends State<cart> {
                           labelText: 'Колво-в коробке',
                         ),
                         controller: controllerkolvo,
+                      ),
+                      TextFormField(
+                        //initialValue: widget.tovar.kolvovkorob.toString(),
+                        decoration: InputDecoration(
+                          labelText: 'Расходы FBS',
+                        ),
+                        controller: controllerfbs,
+                      ),
+                      TextFormField(
+                        //initialValue: widget.tovar.kolvovkorob.toString(),
+                        decoration: InputDecoration(
+                          labelText: 'Другие расходы (упаковка)',
+                        ),
+                        controller: controllerdrugierash,
                       ),
                       SizedBox(height: 20,),
                       Wrap(
@@ -215,7 +233,7 @@ class _cartState extends State<cart> {
                             if (true) {
                               await tehhclass.initbd();
                               var result = await tehhclass.conn!.query(
-                                  'UPDATE `tovars` SET `name`=?, `ssilka`=?,`image`=?, `komment`=?, `priceuan`=?, `veskorob`=?, `kolvovkorob`=? WHERE id=?',
+                                  'UPDATE `tovars` SET `name`=?, `ssilka`=?,`image`=?, `komment`=?, `priceuan`=?, `veskorob`=?, `kolvovkorob`=?, `fbs`=?, `drugierash`=? WHERE id=?',
                                   [
                                     controllername.text,
                                     controllerssilk.text,
@@ -224,6 +242,8 @@ class _cartState extends State<cart> {
                                     controllerprice.text,
                                     controllerves.text,
                                     controllerkolvo.text,
+                                    controllerfbs.text,
+                                    controllerdrugierash.text,
                                     widget.tovar.id!,
                                   ]);
 

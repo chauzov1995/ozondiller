@@ -7,6 +7,7 @@ import 'package:mysql1/mysql1.dart';
 import 'package:ozondiller/addnewtovar.dart';
 import 'package:ozondiller/cart.dart';
 import 'package:ozondiller/konkurentClass.dart';
+import 'package:ozondiller/settingsClass.dart';
 import 'package:ozondiller/tovarClass.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:ozondiller/tehhclass.dart';
@@ -32,20 +33,30 @@ class _spistovarovState extends State<spistovarov> {
 
   List<TovarClass> spistovar = <TovarClass>[];
   List<KonkurentClass> spiskonkurent = <KonkurentClass>[];
+
   double vsegozakupitb = 0;
   double vsegoves = 0;
+  int vsegokolvo = 0;
+  double vsegoprice = 0;
 
   firstinti() async {
     vsegozakupitb = 0;
     vsegoves = 0;
+    vsegokolvo = 0;
+    vsegoprice = 0;
 
     await tehhclass.initbd();
+
+    var results3 = await tehhclass.conn!.query('SELECT * FROM `settings`', []);
+    results3.forEach((json) {
+      tehhclass.settings = (SettingsClass.fromMysql(json));
+    });
 
     spiskonkurent.clear();
     var results2 = await tehhclass.conn!.query('SELECT * FROM `konkurent`', []);
     results2.forEach((json) {
       KonkurentClass ss = KonkurentClass.fromMysql(json);
-      spiskonkurent.add(KonkurentClass.fromMysql(json));
+      spiskonkurent.add(ss);
     });
 
     spistovar.clear();
@@ -65,8 +76,22 @@ class _spistovarovState extends State<spistovarov> {
 
       spistovar.add(ss);
       vsegozakupitb +=
-          ss.priceuan! * tehhclass.kursuuanb * ss.kolvovkorob! * ss.skolkorob!;
+          ss.priceuan! * (tehhclass.settings!.kursuuanb??0) * ss.kolvovkorob! * ss.skolkorob!;
       vsegoves += ss.veskorob! * ss.skolkorob!;
+      vsegokolvo += ss.skolkorob! * ss.kolvovkorob!;
+
+      double konurobor=0,konkurprod=0;
+      ss.konkurents!.forEach((element) {
+
+    //    print(element.konkurentcountprod);
+        konurobor+=element.konkurentoborot??0;
+        konkurprod+=element.konkurentcountprod??0;
+      //  print(konurobor);
+
+      });
+      double podschqwe=konurobor/konkurprod*ss.skolkorob!;
+      vsegoprice+=(podschqwe).isNaN?0:podschqwe;
+
     });
 
     setState(() {});
@@ -92,33 +117,41 @@ class _spistovarovState extends State<spistovarov> {
       konkurentcountprod += element.konkurentcountprod!;
     });
 
-    double dostavka = 2; //в юанях китай около 2 юаней за кг
-    double oreshotka = 15; //в долларах
-    double dostavkapricezakg = 4.2; //в долларах
-    double dostavkasdek = 60; //в рубллях за кг
+    double dostavka = tehhclass.settings!.dostavkakitay ??        0; //2; //в юанях китай около 2 юаней за кг
+    double oreshotka =        tehhclass.settings!.oreshotka ?? 0; // 15/30; //в долларах
+    double dostavkapricezakg =        tehhclass.settings!.dostavkapricezakg ?? 0; // 4.2; //в долларах
+    double dostavkasdek =        tehhclass.settings!.dostavkasdek ?? 0; //60; //в рубллях за кг
+    double uslugidostav = tehhclass.settings!.uslugidostav ?? 0; //0.05;//
+    double strahovka = tehhclass.settings!.strahovka ?? 0; //0.02;
 
-    double sebestoim = ((priceuan * kolvovkorob + dostavka * veskorob) *
-                tehhclass.kursuuanb +
-            (oreshotka + dostavkapricezakg * veskorob) * tehhclass.kursdollar +
-            dostavkasdek) /
-        kolvovkorob;
+
+
+    double sebestoim = ((priceuan * kolvovkorob + priceuan * kolvovkorob * uslugidostav +dostavka * veskorob) *     (tehhclass.settings!.kursuuanb??0) +
+            (oreshotka * veskorob + dostavkapricezakg * veskorob) *     (tehhclass.settings!.kursdollar??0) +
+            dostavkasdek*veskorob) /        kolvovkorob;
+
 
     double konkupricekorrect = 0;
     if (konkurentcountprod != 0) {
       konkupricekorrect = konkurentoborot / konkurentcountprod;
     }
-    double reklama = konkupricekorrect * 0.1;
-    double fbs = konkupricekorrect * 0.2;
-    double drugierash = 20;
+    double reklama = konkupricekorrect * (tehhclass.settings!.reklama??0);
+    double fbs = konkupricekorrect * (spistovar[index].fbs??0);
+    double drugierash = spistovar[index].drugierash??0;
 
     double profit = konkupricekorrect - fbs - reklama - sebestoim - drugierash;
-    double profitproc =profit.isInfinite || profit.isNaN ? 0 : profit / konkupricekorrect * 100;
+    double profitproc = profit.isInfinite || profit.isNaN
+        ? 0
+        : profit / konkupricekorrect * 100;
 
-  Color  color= Colors.green;
-    if(profitproc<10){
-      color=Colors.red;
-    }else if(profitproc>=10 && profitproc<20){
-      color=Colors.yellow.shade700;
+    Color color = Colors.green;
+    if (profitproc <=0) {
+      color = Colors.grey;
+    }
+    if (profitproc >0 && profitproc < 10) {
+      color = Colors.red;
+    } else if (profitproc >= 10 && profitproc < 20) {
+      color = Colors.yellow.shade700;
     }
 
     return DataRow(cells: [
@@ -182,56 +215,27 @@ class _spistovarovState extends State<spistovarov> {
           print("Введенный текст: $text");
         },
       )),
-      DataCell(TextFormField(
-        textAlign: TextAlign.end,
-        inputFormatters: <TextInputFormatter>[
-          //  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9]+[,.]{0,1}[0-9]*')),
-        ],
-        initialValue: priceuan.toString(),
-        decoration: InputDecoration(
-          border: OutlineInputBorder(),
-        ),
-        onFieldSubmitted: (text) {
-          tehhclass.updatetovar("priceuan", text, spistovar[index].id!);
-          print("Введенный текст: $text");
-        },
-      )),
-      DataCell(TextFormField(
-        textAlign: TextAlign.end,
-        inputFormatters: <TextInputFormatter>[
-          //  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9]+[,.]{0,1}[0-9]*')),
-        ],
-        initialValue: tehhclass.tostringmoney(veskorob),
-        decoration: InputDecoration(
-          border: OutlineInputBorder(),
-        ),
-        onFieldSubmitted: (text) {
-          tehhclass.updatetovar("veskorob", text, spistovar[index].id!);
-          print("Введенный текст: $text");
-        },
-      )),
-      DataCell(TextFormField(
-        textAlign: TextAlign.end,
-        inputFormatters: <TextInputFormatter>[
-          //  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9]+[,.]{0,1}[0-9]*')),
-        ],
-        initialValue: kolvovkorob.toString(),
-        decoration: InputDecoration(
-          border: OutlineInputBorder(),
-        ),
-        onFieldSubmitted: (text) {
-          tehhclass.updatetovar("kolvovkorob", text, spistovar[index].id!);
-          print("Введенный текст: $text");
-        },
-      )),
-      DataCell(Text(tehhclass.tostringmoney(priceuan * tehhclass.kursuuanb)
-         +
-            "\n" +
-    tehhclass.tostringmoney(priceuan * tehhclass.kursuuanb * kolvovkorob),
+
+      DataCell(Text( "\n1 шт. - ${tehhclass.tostringmoney(veskorob/kolvovkorob)} кг.\n"+kolvovkorob.toString()+" шт. - "+veskorob.toString()+" кг.",textAlign: TextAlign.right,) ),
+
+
+      DataCell(Text(
+
+    tehhclass.tostringmoney(priceuan) +
+    " ¥\n" +
+        tehhclass.tostringmoney(priceuan * (tehhclass.settings!.kursuuanb??0)) +
+            " Р\n" +
+            tehhclass
+                .tostringmoney(priceuan * (tehhclass.settings!.kursuuanb??0) * kolvovkorob)+" Р",
         textAlign: TextAlign.right,
+      )),
+      DataCell(Text(
+        '${tehhclass.tostringmoney(dostavka*veskorob*(tehhclass.settings!.kursuuanb??0))} Р.\n'+
+            '${tehhclass.tostringmoney( (oreshotka * veskorob + dostavkapricezakg * veskorob) *     (tehhclass.settings!.kursdollar??0))} Р.\n'+
+            '${tehhclass.tostringmoney( dostavkasdek*veskorob)} Р.\n'+
+            '${tehhclass.tostringmoney(dostavka*veskorob*(tehhclass.settings!.kursuuanb??0)+(oreshotka * veskorob + dostavkapricezakg * veskorob) *     (tehhclass.settings!.kursdollar??0)+ dostavkasdek*veskorob)} Р.',
+        textAlign: TextAlign.right,
+
       )),
       DataCell(TextFormField(
         textAlign: TextAlign.end,
@@ -249,16 +253,17 @@ class _spistovarovState extends State<spistovarov> {
         },
       )),
       DataCell(Text(tehhclass.tostringmoney(
-          priceuan * kolvovkorob * tehhclass.kursuuanb * skolkorob))),
-      DataCell(Text(tehhclass.tostringmoney(konkupricekorrect))),
-      DataCell(Text(tehhclass.tostringmoney(konkurentoborot))),
-      DataCell(Text(konkurentcountprod.toString())),
+          priceuan * kolvovkorob * (tehhclass.settings!.kursuuanb??0)* skolkorob))),
+
+      DataCell(Text(tehhclass.tostringmoney(konkupricekorrect)+" Р.\n"+tehhclass.tostringmoney(konkurentoborot)+' Р.\n'+konkurentcountprod.toString()+' шт.',
+        textAlign: TextAlign.right,)),
 
       DataCell(
           Text(tehhclass.tostringmoney(sebestoim.isInfinite ? 0 : sebestoim))),
       DataCell(Text(
-          "${tehhclass.tostringmoney(profit.isInfinite ? 0 : profit)}\n${tehhclass.tostringmoney(profitproc)}%",
-      style: TextStyle(color: color, fontWeight: FontWeight.bold),)),
+        "${tehhclass.tostringmoney(profit.isInfinite ? 0 : profit)}\n${tehhclass.tostringmoney(profitproc)}%",
+        style: TextStyle(color: color, fontWeight: FontWeight.bold),
+      )),
     ]);
   }
 
@@ -295,20 +300,17 @@ class _spistovarovState extends State<spistovarov> {
                     label: Text('Приоритет'),
                     numeric: true,
                   ),
-                  DataColumn(
-                    label: Text('Цена юань'),
-                    numeric: true,
-                  ),
+
                   DataColumn(
                     label: Text('Вес коробки'),
                     numeric: true,
                   ),
                   DataColumn(
-                    label: Text('Кол-во в кооробке'),
+                    label: Text('Цена 1шт/\nКоробки'),
                     numeric: true,
                   ),
                   DataColumn(
-                    label: Text('Цена 1шт/\nКоробки'),
+                    label: Text('Доставка короба'),
                     numeric: true,
                   ),
                   DataColumn(
@@ -319,18 +321,12 @@ class _spistovarovState extends State<spistovarov> {
                     label: Text('Итого руб'),
                     numeric: true,
                   ),
+
                   DataColumn(
-                    label: Text('Цена конкурента'),
+                    label: Text('Цена конкурента\nОборот'),
                     numeric: true,
                   ),
-                  DataColumn(
-                    label: Text('Оборот конкурента'),
-                    numeric: true,
-                  ),
-                  DataColumn(
-                    label: Text('Кол прод конкурента'),
-                    numeric: true,
-                  ),
+
                   DataColumn(
                     label: Text('Себестоимость'),
                     numeric: true,
@@ -354,11 +350,14 @@ class _spistovarovState extends State<spistovarov> {
                   children: [
                     Text(
                         'Стоимость закупки в китае ${tehhclass.tostringmoney(vsegozakupitb)} р.'),
-                    Text('Вес общий ${tehhclass.tostringmoney(vsegoves)} кг.'),
                     Text(
-                        'Доставка 4.2 доллара за кг ${tehhclass.tostringmoney(vsegoves * tehhclass.kursdollar * 4.2)} р.'),
+                        'Доставка китай ${vsegokolvo} шт. ${tehhclass.tostringmoney(vsegoves * (tehhclass.settings!.dostavkakitay ?? 0) * (tehhclass.settings!.kursuuanb??0))} р.'),
                     Text(
-                        'Итого с доставкой 4.2 доллара за кг ${tehhclass.tostringmoney(vsegoves * tehhclass.kursdollar * 4.2 + vsegozakupitb)} р.'),
+                        'Услуги 5% ${tehhclass.tostringmoney(vsegozakupitb * (tehhclass.settings!.uslugidostav ?? 0))} р.'),
+                    Text(
+                        'Доставка 4.2 доллара за кг (всего  ${tehhclass.tostringmoney(vsegoves)} кг.) ${tehhclass.tostringmoney(vsegoves * ((tehhclass.settings!.dostavkapricezakg ?? 0)+(tehhclass.settings!.oreshotka ?? 0)) * (tehhclass.settings!.kursdollar??0))} р.'),
+                    Text(
+                        'Доставка сдек ${tehhclass.tostringmoney(vsegoves * (tehhclass.settings!.dostavkasdek ?? 0))} р.'),
                   ],
                 ),
                 SizedBox(
@@ -368,13 +367,29 @@ class _spistovarovState extends State<spistovarov> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                        'Стоимость закупки в китае ${tehhclass.tostringmoney(vsegozakupitb)} р.'),
+                        'Подитог ${tehhclass.tostringmoney(vsegozakupitb)} р.'),
                     Text(
-                        'Доставка 5% ${tehhclass.tostringmoney(vsegozakupitb * 0.05)} р.'),
+                        'Подитог ${tehhclass.tostringmoney(vsegozakupitb + vsegoves * (tehhclass.settings!.dostavkakitay ?? 0) * (tehhclass.settings!.kursuuanb??0))} р.'),
                     Text(
-                        'Итого с доставкой 5% ${tehhclass.tostringmoney(vsegozakupitb * 0.05 + vsegozakupitb)} р.'),
+                        'Подитог ${tehhclass.tostringmoney(vsegozakupitb + vsegoves * (tehhclass.settings!.dostavkakitay ?? 0) * (tehhclass.settings!.kursuuanb??0)+vsegozakupitb * (tehhclass.settings!.uslugidostav ?? 0))} р.'),
+                    Text(
+                        'Подитог ${tehhclass.tostringmoney(vsegozakupitb + vsegoves * (tehhclass.settings!.dostavkakitay ?? 0) * (tehhclass.settings!.kursuuanb??0)+vsegozakupitb * (tehhclass.settings!.uslugidostav ?? 0)+vsegoves * ((tehhclass.settings!.dostavkapricezakg ?? 0)+(tehhclass.settings!.oreshotka ?? 0)) * (tehhclass.settings!.kursdollar??0))} р.'),
+                    Text(
+                        'Итог ${tehhclass.tostringmoney(vsegozakupitb + vsegoves * (tehhclass.settings!.dostavkakitay ?? 0) * (tehhclass.settings!.kursuuanb??0)+vsegozakupitb * (tehhclass.settings!.uslugidostav ?? 0)+vsegoves * ((tehhclass.settings!.dostavkapricezakg ?? 0)+(tehhclass.settings!.oreshotka ?? 0)) * (tehhclass.settings!.kursdollar??0)+vsegoves * (tehhclass.settings!.dostavkasdek ?? 0))} р.'),
+
                   ],
-                )
+                ),
+                SizedBox(
+                  width: 20,
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        'Подитог ${tehhclass.tostringmoney(vsegoprice)} р.'),
+
+                  ],
+                ),
               ],
             ))
       ]),
