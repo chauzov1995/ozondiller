@@ -22,6 +22,7 @@ class SettingsClass {
     this.kursuuanb,
     this.kursdollar,
     this.reklama,
+    this.eqwaring,
   });
 
   int? id;
@@ -34,6 +35,7 @@ class SettingsClass {
   double? kursuuanb;
   double? kursdollar;
   double? reklama;
+  double? eqwaring;
 
   factory SettingsClass.fromJson(Map<String, dynamic> json) => SettingsClass(
     id: json["id"],
@@ -46,6 +48,7 @@ class SettingsClass {
     kursuuanb: json["kursuuanb"],
     kursdollar: json["kursdollar"],
     reklama: json["reklama"],
+    eqwaring: json["eqwaring"],
   );
 
   factory SettingsClass.fromMysql(ResultRow json)  => SettingsClass(
@@ -59,6 +62,7 @@ class SettingsClass {
     kursuuanb: json["kursuuanb"],
     kursdollar: json["kursdollar"],
     reklama: json["reklama"],
+    eqwaring: json["eqwaring"],
   );
 
   Map<String, dynamic> toJson() => {
@@ -72,5 +76,6 @@ class SettingsClass {
     "kursuuanb": kursuuanb,
     "kursdollar": kursdollar,
     "reklama": reklama,
+    "eqwaring": eqwaring,
   };
 }

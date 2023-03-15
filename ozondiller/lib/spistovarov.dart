@@ -138,8 +138,10 @@ class _spistovarovState extends State<spistovarov> {
     double reklama = konkupricekorrect * (tehhclass.settings!.reklama??0);
     double fbs = konkupricekorrect * (spistovar[index].fbs??0);
     double drugierash = spistovar[index].drugierash??0;
+    double eqwaring = konkupricekorrect * (tehhclass.settings!.eqwaring??0);
 
-    double profit = konkupricekorrect - fbs - reklama - sebestoim - drugierash;
+
+    double profit = konkupricekorrect - fbs - reklama - sebestoim - drugierash -eqwaring;
     double profitproc = profit.isInfinite || profit.isNaN
         ? 0
         : profit / konkupricekorrect * 100;
