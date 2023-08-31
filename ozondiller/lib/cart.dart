@@ -52,7 +52,7 @@ class _cartState extends State<cart> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        brightness: Brightness.dark,
+
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black),
         title: Text(widget.tovar.name!, style: TextStyle(color: Colors.black)),

@@ -42,7 +42,7 @@ class _konkurentredState extends State<konkurentred> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        brightness: Brightness.dark,
+
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black),
         title: Text("Конкурент", style: TextStyle(color: Colors.black)),

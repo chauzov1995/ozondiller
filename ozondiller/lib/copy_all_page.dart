@@ -29,7 +29,7 @@ class _timacopyState extends State<timacopy> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(brightness: Brightness.dark,
+      appBar: AppBar(
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black),
         title: Text("Настройка кнопок", style: TextStyle(color: Colors.black)),

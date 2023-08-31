@@ -89,7 +89,7 @@ class _spistovarovState extends State<spistovarov> {
       //  print(konurobor);
 
       });
-      double podschqwe=konurobor/konkurprod*ss.skolkorob!;
+      double podschqwe=konurobor/konkurprod*ss.kolvovkorob!*ss.skolkorob!;
       vsegoprice+=(podschqwe).isNaN?0:podschqwe;
 
     });
@@ -145,6 +145,13 @@ class _spistovarovState extends State<spistovarov> {
     double profitproc = profit.isInfinite || profit.isNaN
         ? 0
         : profit / konkupricekorrect * 100;
+
+
+    double mincena0proc=(sebestoim+drugierash+eqwaring) /(1-((tehhclass.settings!.reklama??0)+(spistovar[index].fbs??0) ));
+    double mincena5proc=(sebestoim+drugierash+eqwaring) /(1-((tehhclass.settings!.reklama??0)+(spistovar[index].fbs??0)+0.05 ));
+    double mincena10proc=(sebestoim+drugierash+eqwaring) /(1-((tehhclass.settings!.reklama??0)+(spistovar[index].fbs??0)+0.1 ));
+    double mincena15proc=(sebestoim+drugierash+eqwaring) /(1-((tehhclass.settings!.reklama??0)+(spistovar[index].fbs??0)+0.15 ));
+    double mincena20proc=(sebestoim+drugierash+eqwaring) /(1-((tehhclass.settings!.reklama??0)+(spistovar[index].fbs??0)+0.2 ));
 
     Color color = Colors.green;
     if (profitproc <=0) {
@@ -266,6 +273,28 @@ class _spistovarovState extends State<spistovarov> {
         "${tehhclass.tostringmoney(profit.isInfinite ? 0 : profit)}\n${tehhclass.tostringmoney(profitproc)}%",
         style: TextStyle(color: color, fontWeight: FontWeight.bold),
       )),
+      DataCell(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+          Text("${tehhclass.tostringmoney(mincena0proc.isInfinite ? 0 : mincena0proc)}", style: TextStyle(color: Colors.grey),),
+          Text("${tehhclass.tostringmoney(mincena5proc.isInfinite ? 0 : mincena5proc)}", style: TextStyle(color: Colors.grey),),
+          Text("${tehhclass.tostringmoney(mincena10proc.isInfinite ? 0 : mincena10proc)}", style: TextStyle(color: Colors.red)),
+          Text("${tehhclass.tostringmoney(mincena15proc.isInfinite ? 0 : mincena15proc)}", style: TextStyle(color: Colors.yellow.shade700)),
+          Text("${tehhclass.tostringmoney(mincena20proc.isInfinite ? 0 : mincena20proc)}", style: TextStyle(color: Colors.green)),
+    ],)),
+      DataCell(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("0", style: TextStyle(color: Colors.grey),),
+              Text("${tehhclass.tostringmoney(mincena5proc.isInfinite ? 0 : mincena5proc-mincena0proc)}", style: TextStyle(color: Colors.grey),),
+              Text("${tehhclass.tostringmoney(mincena10proc.isInfinite ? 0 : mincena10proc-mincena0proc)}", style: TextStyle(color: Colors.red)),
+              Text("${tehhclass.tostringmoney(mincena15proc.isInfinite ? 0 : mincena15proc-mincena0proc)}", style: TextStyle(color: Colors.yellow.shade700)),
+              Text("${tehhclass.tostringmoney(mincena20proc.isInfinite ? 0 : mincena20proc-mincena0proc)}", style: TextStyle(color: Colors.green)),
+            ],))
     ]);
   }
 
@@ -337,6 +366,14 @@ class _spistovarovState extends State<spistovarov> {
                     label: Text('Профит'),
                     numeric: true,
                   ),
+                  DataColumn(
+                    label: Text('Мин цена\n0/5/10/15/20\nпроц'),
+                    numeric: true,
+                  ),
+                  DataColumn(
+                    label: Text('Профит\n0/5/10/15/20\nпроц'),
+                    numeric: true,
+                  ),
                 ],
                 rows: List<DataRow>.generate(
                     spistovar.length, (index) => widgerere(index)))),
@@ -357,7 +394,7 @@ class _spistovarovState extends State<spistovarov> {
                     Text(
                         'Услуги 5% ${tehhclass.tostringmoney(vsegozakupitb * (tehhclass.settings!.uslugidostav ?? 0))} р.'),
                     Text(
-                        'Доставка 4.2 доллара за кг (всего  ${tehhclass.tostringmoney(vsegoves)} кг.) ${tehhclass.tostringmoney(vsegoves * ((tehhclass.settings!.dostavkapricezakg ?? 0)+(tehhclass.settings!.oreshotka ?? 0)) * (tehhclass.settings!.kursdollar??0))} р.'),
+                        'Доставка ${tehhclass.settings!.dostavkapricezakg} доллара за кг (всего  ${tehhclass.tostringmoney(vsegoves)} кг.) ${tehhclass.tostringmoney(vsegoves * ((tehhclass.settings!.dostavkapricezakg ?? 0)+(tehhclass.settings!.oreshotka ?? 0)) * (tehhclass.settings!.kursdollar??0))} р.'),
                     Text(
                         'Доставка сдек ${tehhclass.tostringmoney(vsegoves * (tehhclass.settings!.dostavkasdek ?? 0))} р.'),
                   ],

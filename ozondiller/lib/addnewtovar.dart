@@ -38,7 +38,7 @@ class _addnewtovarState extends State<addnewtovar> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        brightness: Brightness.dark,
+
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black),
         title: Text("Добавление товара", style: TextStyle(color: Colors.black)),
