@@ -39,6 +39,7 @@ dependencies:
   url_launcher: ^6.1.10
   data_table_2: ^2.3.12
   intl: ^0.18.0
+  http: ^1.1.0
 
 dev_dependencies:
   flutter_test:

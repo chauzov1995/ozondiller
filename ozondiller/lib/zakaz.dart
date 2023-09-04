@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
@@ -9,19 +10,23 @@ import 'package:ozondiller/cart.dart';
 import 'package:ozondiller/konkurentClass.dart';
 import 'package:ozondiller/settingsClass.dart';
 import 'package:ozondiller/tovarClass.dart';
+import 'package:ozondiller/zakazClass.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:ozondiller/tehhclass.dart';
+import 'package:http/http.dart' as http;
 
 // Define a custom Form widget.
-class spistovarov extends StatefulWidget {
-  spistovarov();
+class zakaz extends StatefulWidget {
+  Zakaz zakaz1;
+
+  zakaz(this.zakaz1);
 
   @override
-  _spistovarovState createState() => _spistovarovState();
+  _zakazState createState() => _zakazState();
 }
 
-class _spistovarovState extends State<spistovarov> {
-  _spistovarovState();
+class _zakazState extends State<zakaz> {
+  _zakazState();
 
   @override
   void initState() {
@@ -59,11 +64,17 @@ class _spistovarovState extends State<spistovarov> {
       spiskonkurent.add(ss);
     });
 
-    spistovar.clear();
-    var results = await tehhclass.conn!
-        .query('SELECT * FROM `tovars` order by prioritet', []);
+    // spistovar.clear();
+    List<TovarClass> spistovar_vsp = <TovarClass>[];
+    List<String> ozids = [];
+    var results = await tehhclass.conn!.query(
+        'SELECT tovars.*, zakaz_tovar.faktdostkitay, zakaz_tovar.kolvokor, zakaz_tovar.ozid FROM `tovars` Left join  zakaz_tovar ON tovars.id=zakaz_tovar.tovar where zakaz_tovar.zakaz=? order by tovars.prioritet',
+        [widget.zakaz1.id]);
     results.forEach((json) {
       TovarClass ss = TovarClass.fromMysql(json);
+      if (ss.ozid! > 0) {
+        ozids.add(ss.ozid.toString());
+      }
       ss.konkurents =
           spiskonkurent.where((element) => element.tovarid == ss.id).toList();
       ss.konkurents!.add(KonkurentClass(
@@ -74,15 +85,11 @@ class _spistovarovState extends State<spistovarov> {
           konkurentoborot: 0,
           konkurentssilka: ""));
 
-      spistovar.add(ss);
+      spistovar_vsp.add(ss);
       if (ss.skolkorob! > 0) {
         vsegozakupitb += (ss.priceuan! * ss.kolvovkorob! * ss.skolkorob! +
                 1 +
-                (ss.dostavkayuanbfakt! > 0
-                    ? ss.dostavkayuanbfakt!
-                    : (ss.veskorob! *
-                        ss.skolkorob! *
-                        tehhclass.settings!.dostavkakitay!))) *
+                ss.faktdostkitay!) *
             (tehhclass.settings!.kursuuanb ?? 0) *
             (1 + tehhclass.settings!.uslugidostav!);
       }
@@ -102,7 +109,43 @@ class _spistovarovState extends State<spistovarov> {
       vsegoprice += (podschqwe).isNaN ? 0 : podschqwe;
     });
 
+    var responseJson = await ozonzarpos(ozids);
+
+    responseJson['result']['items'].forEach((entitlement) {
+      var elem = spistovar_vsp
+          .firstWhere((element) => element.ozid == entitlement['product_id']);
+
+      elem.ozondann = entitlement;
+    });
+
+    spistovar = spistovar_vsp;
+
     setState(() {});
+  }
+
+  Future<dynamic> ozonzarpos(List<String> ozids) async {
+//print(ozids);
+
+    final response = await http.post(
+      Uri.parse('https://api-seller.ozon.ru/v4/product/info/prices'),
+      // Send authorization headers to the backend.
+
+      headers: {
+        "Host": "api-seller.ozon.ru",
+        "Client-Id": "788625",
+        "Api-Key": "00a963ea-0110-4122-a5fc-e84a3c7b8b01",
+        "Content-Type": "application/json",
+      },
+
+      body: jsonEncode({
+        "filter": {
+          "product_id": ozids,
+        },
+        "last_id": "",
+        "limit": 100
+      }),
+    );
+    return jsonDecode(response.body);
   }
 
   @override
@@ -113,62 +156,63 @@ class _spistovarovState extends State<spistovarov> {
   DataRow widgerere(index) {
     double priceuan = spistovar[index].priceuan ?? 0;
     double veskorob = spistovar[index].veskorob ?? 0;
-    int skolkorob = spistovar[index].skolkorob ?? 0;
+    int skolkorob = spistovar[index].kolvokor ?? 0;
     int kolvovkorob = spistovar[index].kolvovkorob ?? 0;
-    double dostavkayuanbfakt = spistovar[index].dostavkayuanbfakt ?? 0;
 
-    // double konkurentprice=0;
     double konkurentoborot = 0;
     int konkurentcountprod = 0;
     spistovar[index].konkurents!.forEach((element) {
-      //konkurentprice+=  element.konkurentprice!;
       konkurentoborot += element.konkurentoborot!;
       konkurentcountprod += element.konkurentcountprod!;
     });
 
-    double dostavkakitay = tehhclass.settings!.dostavkakitay ??
-        0; //2; //в юанях китай около 2 юаней за кг
-    double oreshotka =
-        tehhclass.settings!.oreshotka ?? 0; // 15/30; //в долларах
-    double dostavkapricezakg =
-        tehhclass.settings!.dostavkapricezakg ?? 0; // 4.2; //в долларах
-    double dostavkasdek =
-        tehhclass.settings!.dostavkasdek ?? 0; //60; //в рубллях за кг
-    double uslugidostav = tehhclass.settings!.uslugidostav ?? 0; //0.05;//
-    double strahovka = tehhclass.settings!.strahovka ?? 0; //0.02;
+    double dostavkapricezakg = widget.zakaz1.faktpricezakg!;
 
-    double itogo = priceuan * kolvovkorob * skolkorob +
-        1 +
-        (dostavkayuanbfakt > 0
-            ? dostavkayuanbfakt
-            : (veskorob * skolkorob * dostavkakitay));
+    double faktdostkitay = spistovar[index].faktdostkitay ?? 0;
+    double faktdostagent =
+        (veskorob * skolkorob / vsegoves) * widget.zakaz1.faktdostagent!;
+    double dostavkasdek =
+        (veskorob * skolkorob / vsegoves) * widget.zakaz1.faktdostsdek!;
+
+    double itogo = priceuan * kolvovkorob * skolkorob + 1 + faktdostkitay;
 
     double sebestoim =
-        (itogo / skolkorob * (tehhclass.settings!.kursuuanb ?? 0) +
-                (oreshotka * veskorob + dostavkapricezakg * veskorob) *
-                    (tehhclass.settings!.kursdollar ?? 0) +
-                dostavkasdek * veskorob) /
-            kolvovkorob;
+        (itogo * widget.zakaz1.kurstuanb! + dostavkasdek + faktdostagent) /
+            (kolvovkorob * skolkorob);
 
     double konkupricekorrect = 0;
     if (konkurentcountprod != 0) {
       konkupricekorrect = konkurentoborot / konkurentcountprod;
     }
     double reklama = konkupricekorrect * (tehhclass.settings!.reklama ?? 0);
-    double fbs = konkupricekorrect * (spistovar[index].fbs ?? 0);
     double drugierash = spistovar[index].drugierash ?? 0;
     double eqwaring = konkupricekorrect * (tehhclass.settings!.eqwaring ?? 0);
 
-    double profit =
-        konkupricekorrect - fbs - reklama - sebestoim - drugierash - eqwaring;
+    double priceozon = 0, fbs = 0, pricemarkozon = 0, marjaoz = 0;
+    if (spistovar[index].ozondann != null) {
+      var entitlement = spistovar[index].ozondann;
+
+      fbs = (((entitlement['commissions']['sales_percent_fbs']) *
+              double.parse(entitlement['price']['price']) /
+              100) +
+          entitlement['commissions']['fbs_first_mile_max_amount'] +
+          entitlement['commissions']['fbs_direct_flow_trans_max_amount'] +
+          entitlement['commissions']
+              ['fbs_deliv_to_customer_amount']); //23 экваринг
+
+
+      priceozon = double.parse(entitlement['price']['price']);
+      pricemarkozon = double.parse(entitlement['price']['marketing_price']);
+      marjaoz = priceozon - fbs - sebestoim - drugierash - eqwaring;
+    }
+
+    double profit = konkupricekorrect - fbs - sebestoim - drugierash - eqwaring;
 
     double profitproc = profit.isInfinite || profit.isNaN
         ? 0
         : profit / konkupricekorrect * 100;
 
-    double mincena0proc = (sebestoim + drugierash + eqwaring) /
-        (1 -
-            ((tehhclass.settings!.reklama ?? 0) + (spistovar[index].fbs ?? 0)));
+    double mincena0proc = (sebestoim + drugierash + eqwaring)        ;
     double mincena5proc = (sebestoim + drugierash + eqwaring) /
         (1 -
             ((tehhclass.settings!.reklama ?? 0) +
@@ -246,21 +290,6 @@ class _spistovarovState extends State<spistovarov> {
         ],
       )),
       DataCell(Text(spistovar[index].komment ?? "")),
-      DataCell(TextFormField(
-        textAlign: TextAlign.end,
-        inputFormatters: <TextInputFormatter>[
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-          //  FilteringTextInputFormatter.allow(RegExp(r'[0-9]+[,.]{0,1}[0-9]*')),
-        ],
-        initialValue: spistovar[index].prioritet.toString(),
-        decoration: InputDecoration(
-          border: OutlineInputBorder(),
-        ),
-        onFieldSubmitted: (text) {
-          tehhclass.updatetovar("prioritet", text, spistovar[index].id!);
-          print("Введенный текст: $text");
-        },
-      )),
       DataCell(Text(
         "\n1 шт. - ${tehhclass.tostringmoney(veskorob / kolvovkorob)} кг.\n" +
             kolvovkorob.toString() +
@@ -281,27 +310,12 @@ class _spistovarovState extends State<spistovarov> {
         textAlign: TextAlign.right,
       )),
       DataCell(Text(
-        '${tehhclass.tostringmoney((dostavkayuanbfakt > 0 ? dostavkakitay : dostavkakitay) * veskorob * (tehhclass.settings!.kursuuanb ?? 0))} Р.\n' +
-            '${tehhclass.tostringmoney((oreshotka * veskorob + dostavkapricezakg * veskorob) * (tehhclass.settings!.kursdollar ?? 0))} Р.\n' +
-            '${tehhclass.tostringmoney(dostavkasdek * veskorob)} Р.\n' +
-            '${tehhclass.tostringmoney((dostavkayuanbfakt > 0 ? dostavkakitay : dostavkakitay) * veskorob * (tehhclass.settings!.kursuuanb ?? 0) + (oreshotka * veskorob + dostavkapricezakg * veskorob) * (tehhclass.settings!.kursdollar ?? 0) + dostavkasdek * veskorob)} Р.',
+        '${tehhclass.tostringmoney(faktdostagent)} Р.\n' +
+            '${tehhclass.tostringmoney(dostavkasdek)} Р.\n' +
+            '${tehhclass.tostringmoney(faktdostagent + dostavkasdek)} Р.',
         textAlign: TextAlign.right,
       )),
-      DataCell(TextFormField(
-        textAlign: TextAlign.end,
-        inputFormatters: <TextInputFormatter>[
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-          //  FilteringTextInputFormatter.allow(RegExp(r'[0-9]+[,.]{0,1}[0-9]*')),
-        ],
-        initialValue: skolkorob.toString(),
-        decoration: InputDecoration(
-          border: OutlineInputBorder(),
-        ),
-        onFieldSubmitted: (text) {
-          tehhclass.updatetovar("skolkorob", text, spistovar[index].id!);
-          print("Введенный текст: $text");
-        },
-      )),
+      DataCell(Text(skolkorob.toString())),
       DataCell(Text(
         tehhclass.tostringmoney(itogo) +
             " ¥\n" +
@@ -325,6 +339,8 @@ class _spistovarovState extends State<spistovarov> {
         "${tehhclass.tostringmoney(profit.isInfinite ? 0 : profit)}\n${tehhclass.tostringmoney(profitproc)}%",
         style: TextStyle(color: color, fontWeight: FontWeight.bold),
       )),
+      DataCell(Text(
+          "Цена ${priceozon}\nМарк ${pricemarkozon}\nFBS ${fbs}\nМарж ${tehhclass.tostringmoney(marjaoz)}\nМарж ${tehhclass.tostringmoney(marjaoz / priceozon * 100)}")),
       DataCell(Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -380,45 +396,8 @@ class _spistovarovState extends State<spistovarov> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black),
-        title: Text("Список товаров", style: TextStyle(color: Colors.black)),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () async {
-              await tehhclass.initbd();
-
-          var result=   await tehhclass.conn!.query(
-                  'INSERT INTO `zakaz`(`kursdollar`, `kurstuanb`) VALUES (?, ?)',
-                  [
-                    tehhclass.settings!.kursdollar,
-                    tehhclass.settings!.kursuuanb
-                  ]);
-
-              spistovar.forEach((TovarClass element)  async {
-                if (element.skolkorob! > 0) {
-
-                  await tehhclass.conn!.query(
-                      'INSERT INTO `zakaz_tovar`(`tovar`, `zakaz`, `kolvokor`) VALUES (?, ?, ?)',
-                      [
-                        element.id,
-                        result.insertId,
-                        element.skolkorob,
-
-                      ]);
-
-                }
-              });
-
-
-
-
-
-              Navigator.pop(context);
-
-
-            },
-            child: Text("СОЗДАТЬ ЗАКАЗ"),
-          )
-        ],
+        title: Text("Заказ id${widget.zakaz1.id}",
+            style: TextStyle(color: Colors.black)),
       ),
       body: Column(children: [
         Expanded(
@@ -442,10 +421,6 @@ class _spistovarovState extends State<spistovarov> {
                     label: Text('Коментарий'),
                   ),
                   DataColumn(
-                    label: Text('Приоритет'),
-                    numeric: true,
-                  ),
-                  DataColumn(
                     label: Text('Вес коробки'),
                     numeric: true,
                   ),
@@ -454,7 +429,7 @@ class _spistovarovState extends State<spistovarov> {
                     numeric: true,
                   ),
                   DataColumn(
-                    label: Text('Доставка короба'),
+                    label: Text('Доставка короба/\nСдек/\nВсего'),
                     numeric: true,
                   ),
                   DataColumn(
@@ -475,6 +450,10 @@ class _spistovarovState extends State<spistovarov> {
                   ),
                   DataColumn(
                     label: Text('Профит'),
+                    numeric: true,
+                  ),
+                  DataColumn(
+                    label: Text('Данные Ozon'),
                     numeric: true,
                   ),
                   DataColumn(
@@ -501,44 +480,23 @@ class _spistovarovState extends State<spistovarov> {
                     Text(
                         'Стоимость закупки в китае ${tehhclass.tostringmoney(vsegozakupitb)} р.'),
                     Text(
-                        'Доставка ${tehhclass.settings!.dostavkapricezakg} доллара за кг (всего  ${tehhclass.tostringmoney(vsegoves)} кг.) ${tehhclass.tostringmoney(vsegoves * ((tehhclass.settings!.dostavkapricezakg ?? 0) + (tehhclass.settings!.oreshotka ?? 0)) * (tehhclass.settings!.kursdollar ?? 0))} р.'),
+                        'Доставка ${widget.zakaz1.faktpricezakg} доллара за кг (всего  ${widget.zakaz1.faktves} кг ${vsegoves}.) ${widget.zakaz1.faktdostagent} р.'),
                     Text(
-                        'Доставка сдек ${tehhclass.tostringmoney(vsegoves * (tehhclass.settings!.dostavkasdek ?? 0))} р.'),
+                        'Доставка сдек ${tehhclass.tostringmoney(widget.zakaz1.faktdostsdek!)} р.'),
+                    Text(
+                        'Итого ${tehhclass.tostringmoney(widget.zakaz1.faktdostsdek! + widget.zakaz1.faktdostagent! + vsegozakupitb)} р.'),
                   ],
                 ),
                 SizedBox(
                   width: 20,
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                        'Подитог ${tehhclass.tostringmoney(vsegozakupitb)} р.'),
-                    Text(
-                        'Подитог ${tehhclass.tostringmoney(vsegozakupitb + vsegoves * (tehhclass.settings!.dostavkakitay ?? 0) * (tehhclass.settings!.kursuuanb ?? 0) + vsegozakupitb * (tehhclass.settings!.uslugidostav ?? 0) + vsegoves * ((tehhclass.settings!.dostavkapricezakg ?? 0) + (tehhclass.settings!.oreshotka ?? 0)) * (tehhclass.settings!.kursdollar ?? 0))} р.'),
-                    Text(
-                        'Итог ${tehhclass.tostringmoney(vsegozakupitb + vsegoves * (tehhclass.settings!.dostavkakitay ?? 0) * (tehhclass.settings!.kursuuanb ?? 0) + vsegozakupitb * (tehhclass.settings!.uslugidostav ?? 0) + vsegoves * ((tehhclass.settings!.dostavkapricezakg ?? 0) + (tehhclass.settings!.oreshotka ?? 0)) * (tehhclass.settings!.kursdollar ?? 0) + vsegoves * (tehhclass.settings!.dostavkasdek ?? 0))} р.'),
-                  ],
-                ),
-                SizedBox(
-                  width: 20,
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Подитог ${tehhclass.tostringmoney(vsegoprice)} р.'),
-                  ],
                 ),
               ],
             ))
       ]),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => addnewtovar()),
-          );
-          firstinti();
+          //788625
+//00a963ea-0110-4122-a5fc-e84a3c7b8b01
         },
         tooltip: 'Increment',
         child: const Icon(Icons.add),

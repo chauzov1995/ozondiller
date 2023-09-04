@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:ozondiller/konkurentred.dart';
 import 'package:ozondiller/tehhclass.dart';
 import 'package:ozondiller/tovarClass.dart';
